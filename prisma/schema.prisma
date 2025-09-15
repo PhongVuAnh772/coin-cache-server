@@ -1,0 +1,185 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String?  @unique
+  password  String?
+  createdAt DateTime @default(now())
+  logs      Log[]
+  wallets   Wallet[]
+}
+
+model Protocol {
+  id          String   @id @default(uuid())
+  name        String
+  chainId     String
+  explorerUrl String?
+  assets      Asset[]
+  wallets     Wallet[]
+}
+
+model Wallet {
+  id                  String        @id @default(uuid())
+  userId              String
+  protocolId          String
+  address             String        @unique
+  privateKeyVaultId   String?       // Lưu ID trong Vault/HSM thay vì trực tiếp
+  createdAt           DateTime      @default(now())
+  balances            Balance[]
+  nfts                Nft[]
+  transactions        Transaction[]
+  protocol            Protocol      @relation(fields: [protocolId], references: [id])
+  user                User          @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([protocolId])
+}
+
+model Asset {
+  id              String         @id @default(uuid())
+  protocolId      String
+  type            AssetType
+  symbol          String
+  name            String
+  contractAddress String?
+  decimals        Int?
+  isStablecoin    Boolean        @default(false)
+  protocol        Protocol       @relation(fields: [protocolId], references: [id])
+  balances        Balance[]
+  nfts            Nft[]
+  priceHistory    PriceHistory[]
+  transactions    Transaction[]
+
+  @@index([symbol])
+  @@index([protocolId])
+}
+
+model Balance {
+  id       String  @id @default(uuid())
+  walletId String
+  assetId  String
+  amount   Decimal @db.Decimal(38, 18)
+  asset    Asset   @relation(fields: [assetId], references: [id])
+  wallet   Wallet  @relation(fields: [walletId], references: [id])
+
+  @@index([walletId])
+  @@index([assetId])
+  @@index([walletId, assetId])
+}
+
+model Transaction {
+  id         String               @id @default(uuid())
+  walletId   String
+  assetId    String
+  actionType ActionType
+  sourceType TransactionSource    // phân biệt internal / external / contract
+  toAddress  String
+  fromAddress String?
+  amount     Decimal              @db.Decimal(38, 18)
+  fee        Decimal?             @db.Decimal(38, 18)
+  txHash     String?              @unique
+  status     TransactionStatus    @default(PENDING)
+  createdAt  DateTime             @default(now())
+  chainId    String?              // multi-chain
+  asset      Asset                @relation(fields: [assetId], references: [id])
+  wallet     Wallet               @relation(fields: [walletId], references: [id])
+  metadata   TransactionMetadata?
+
+  @@index([walletId])
+  @@index([assetId])
+  @@index([txHash])
+  @@index([walletId, assetId])
+}
+
+model TransactionMetadata {
+  id            String      @id @default(uuid())
+  transactionId String      @unique
+  blockNumber   BigInt?
+  gasUsed       Decimal?    @db.Decimal(38, 18)
+  confirmations Int?
+  errorMessage  String?
+  transaction   Transaction @relation(fields: [transactionId], references: [id])
+}
+
+model Nft {
+  id          String  @id @default(uuid())
+  walletId    String
+  assetId     String
+  tokenId     String
+  metadataUrl String?
+  imageUrl    String?
+  name        String?
+  description String?
+  chainId     String?
+  contractAddress String?
+  asset       Asset   @relation(fields: [assetId], references: [id])
+  wallet      Wallet  @relation(fields: [walletId], references: [id])
+
+  @@index([walletId])
+  @@index([assetId])
+  @@index([tokenId])
+  @@index([chainId])
+}
+
+model Log {
+  id        String   @id @default(uuid())
+  userId    String
+  action    String
+  details   Json?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+model PriceHistory {
+  id        String   @id @default(uuid())
+  assetId   String
+  price     Decimal  @db.Decimal(38, 18)
+  currency  String   @default("USD")  // Có thể mở rộng multi-currency
+  timestamp DateTime @default(now())
+  asset     Asset    @relation(fields: [assetId], references: [id])
+
+  @@index([assetId])
+  @@index([timestamp])
+}
+
+enum AssetType {
+  COIN
+  TOKEN
+  NFT
+  STABLECOIN
+  GOVERNANCE_TOKEN
+}
+
+enum ActionType {
+  SEND_COIN
+  SEND_TOKEN
+  SEND_NFT
+  RECEIVE
+  N2N
+  SWAP
+  BRIDGE
+  DEPOSIT
+  WITHDRAW
+}
+
+enum TransactionStatus {
+  PENDING
+  CONFIRMED
+  FAILED
+  CANCELLED
+}
+
+enum TransactionSource {
+  INTERNAL    // từ ví trong app / n2n
+  EXTERNAL    // từ blockchain khác / external address
+  CONTRACT    // smart contract
+}

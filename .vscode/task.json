@@ -1,0 +1,30 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Airdrop 5 SOL",
+      "type": "shell",
+      "command": "./faucet-tasks.sh airdrop"
+    },
+    {
+      "label": "Check Balance",
+      "type": "shell",
+      "command": "./faucet-tasks.sh balance"
+    },
+    {
+      "label": "Mint 100 Token",
+      "type": "shell",
+      "command": "./faucet-tasks.sh mint"
+    },
+    {
+      "label": "Token Balance",
+      "type": "shell",
+      "command": "./faucet-tasks.sh token-balance"
+    },
+    {
+      "label": "Account Info",
+      "type": "shell",
+      "command": "./faucet-tasks.sh account-info"
+    }
+  ]
+}
