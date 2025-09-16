@@ -2,6 +2,46 @@ export const uniswapAbi = [
   {
     constant: true,
     inputs: [],
+    name: "factory",
+    outputs: [{ name: "", type: "address" }],
+    stateMutability: "pure",
+    type: "function",
+  },
+  {
+    constant: true,
+    inputs: [],
+    name: "getReserves",
+    outputs: [
+      { name: "_reserve0", type: "uint112" },
+      { name: "_reserve1", type: "uint112" },
+      { name: "_blockTimestampLast", type: "uint32" },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "address", name: "tokenA", type: "address" },
+      { internalType: "address", name: "tokenB", type: "address" },
+      { internalType: "uint256", name: "amountADesired", type: "uint256" },
+      { internalType: "uint256", name: "amountBDesired", type: "uint256" },
+      { internalType: "uint256", name: "amountAMin", type: "uint256" },
+      { internalType: "uint256", name: "amountBMin", type: "uint256" },
+      { internalType: "address", name: "to", type: "address" },
+      { internalType: "uint256", name: "deadline", type: "uint256" },
+    ],
+    name: "addLiquidity",
+    outputs: [
+      { internalType: "uint256", name: "amountA", type: "uint256" },
+      { internalType: "uint256", name: "amountB", type: "uint256" },
+      { internalType: "uint256", name: "liquidity", type: "uint256" },
+    ],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    constant: true,
+    inputs: [],
     name: "getReserves",
     outputs: [
       { name: "_reserve0", type: "uint112" },

@@ -3,11 +3,15 @@ import fetch from "node-fetch";
 import redis from "../redisClient.js";
 import Stripe from "stripe";
 import dotenv from "dotenv";
+import { runSwapToken, getJobStatus } from "../jobs/index.js";
+
 dotenv.config();
 
 const router = express.Router();
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+const allowedNetworks = ["sepolia", "goerli", "mainnet"];
 
 router.get("/stripe-key", async (req, res) => {
   try {
@@ -41,6 +45,27 @@ router.get("/:coin", async (req, res) => {
   }
 });
 
+router.post("/swap-token", (req, res) => {
+  const apiKey = req.headers["x-api-key"];
+  // if (apiKey !== process.env.MY_API_KEY)
+  //   return res.status(403).json({ error: "Forbidden" });
+
+  const network = req.body.network || "sepolia";
+  if (!allowedNetworks.includes(network))
+    return res.status(400).json({ error: "Invalid network" });
+
+  const jobId = runSwapToken(network);
+  res.json({ jobId, message: "Swap token job started" });
+});
+
+// GET job status
+router.get("/swap-token/status/:jobId", (req, res) => {
+  const { jobId } = req.params;
+  const job = getJobStatus(jobId);
+  if (!job) return res.status(404).json({ error: "Job not found" });
+  res.json(job);
+});
+
 router.post("/create-payment-intent", async (req, res) => {
   try {
     const { amount, currency } = req.body;
@@ -53,8 +78,7 @@ router.post("/create-payment-intent", async (req, res) => {
     const paymentIntent = await stripe.paymentIntents.create({
       amount,
       currency,
-      payment_method_types: ["card"],
-    });
+      payment_method_types: ["card"], 
 
     console.log("PaymentIntent created:", paymentIntent.id);
 
